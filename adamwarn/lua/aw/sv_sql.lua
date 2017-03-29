@@ -1,5 +1,8 @@
 // SERVERSIDE SQL FILE \\
-require("mysqloo")
+if(aw_sv.MySQL == true) then
+  require("mysqloo")
+end
+
 aw_sql = {}
 if(aw_sv.MySQL == true) then
   local db = mysqloo.connect(aw_sv.Host, aw_sv.User, aw_sv.Pass, aw_sv.Db)

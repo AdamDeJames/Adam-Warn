@@ -32,6 +32,7 @@ end
 hook.Add("PlayerDisconnected", "RemovedTable", aw_PlayerLeft)
 
 function aw_findplayer(str)
+	print(str)
 	local aw_players = {}
 	for k, v in pairs(player.GetAll()) do
 		if(string.match(string.lower(str), string.lower(v:Nick()))) then

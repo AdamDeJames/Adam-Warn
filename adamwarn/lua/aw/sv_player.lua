@@ -60,9 +60,12 @@ end
 
 function meta:aw_warn(reason, admin)
 	if(aw_sv.MySQL) then
-		local q1 = "INSERT INTO `warns` (`name`, `steamid`, `time_warned`, `reason`, `admin`) VALUES ('"..mysqle(self:Name()).."', '"..self:SteamID().."', CURRENT_TIMESTAMP, '"..mysqle(reason).."', '"..mysqle(admin).."');"
+		local q1 = "INSERT INTO `warns` (`name`, `steamid`, `time_warned`, `reason`, `admin`) VALUES '"..mysqle(self:Name()).."', '"..self:SteamID().."', CURRENT_TIMESTAMP, '"..mysqle(reason).."', '"..mysqle(admin).."';"
 		aw_sql.sql:Query(q1)
 		self:aw_LoadWarns()
+	else
+		sql.Query("INSERT INTO warns (name, steamid, reason, admin) VALUES ("..sql.SQLStr(self:Name())..", '"..self:SteamID().."', "..sql.SQLStr(reason)..", "..sql.SQLStr(admin)..");")
+		print(sql.LastError())
 	end
 end
 
@@ -90,11 +93,17 @@ function meta:aw_LoadWarns()
 			end
 		end)
 	else
-		local path = "adamwarn/"
-		local files, folders = file.Find(path..id..".txt", "DATA")
-		if(files) then
-			local data = util.JSONToTable(file.Read(path..id..".txt", "DATA"))
-			table.insert(aw_warnings[self:SteamID()], data)
+		local query = "SELECT * FROM `warns` WHERE steamid = '"..id.."'"
+		local result = sql.Query(query)
+		for k, v in pairs(result) do
+			table.insert(aw_warnings[self:SteamID()], v)
+			PrintTable(aw_warnings[self:SteamID()])
+		end
+
+		for _, a in pairs(player.GetAll()) do
+			if(a:aw_hasaccess() and self:GetNWBool("Already_Joined") != true) then
+				a:aw_notify_chat(self:Nick().." joins the game with "..#result.." warns!")
+			end
 		end
 	end
 end

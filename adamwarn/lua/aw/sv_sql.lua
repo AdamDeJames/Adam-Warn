@@ -53,5 +53,19 @@ if(aw_sv.MySQL == true) then
 
   db:connect()
 else
-    //
+    if(not sql.TableExists("warns")) then
+      sql.Query([[CREATE TABLE `warns` (
+  `id`  INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  `name`  varchar(255) NOT NULL,
+  `steamid` varchar(255) NOT NULL,
+  `time_warned` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `reason`  varchar(255) NOT NULL,
+  `admin` varchar(255) NOT NULL
+);]])
+      if(not sql.TableExists("warns")) then
+        print(sql.LastError())
+      end
+    else
+      return
+    end
 end

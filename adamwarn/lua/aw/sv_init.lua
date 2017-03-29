@@ -174,8 +174,13 @@ aw_addcmd("warn", function(ply, victim, reason, ...)
 	if(string.find(victim, "STEAM_")) then
 		local endoftext = string.Implode(" ", {...})
 		reason = reason.." "..endoftext
-		local q1 = "INSERT INTO `warns` (`name`, `steamid`, `reason`, `admin`) VALUES ('Nil', '"..mysqle(victim).."', '"..mysqle(reason).."', '"..ply:Name().."')"
-		aw_sql.sql:Query(q1)
+		if(aw_sv.MySQL == true) then
+			local q1 = "INSERT INTO `warns` (`name`, `steamid`, `reason`, `admin`) VALUES ('Nil', '"..mysqle(victim).."', '"..mysqle(reason).."', '"..mysqle(ply:Name()).."')"
+			aw_sql.sql:Query(q1)
+		else
+			local q = "INSERT INTO warns (name, steamid, reason, admin) VALUES ('Nil', "..sql.SQLStr(victim)..", "..sql.SQLStr(reason)..", "..sql.SQLStr(ply:Name())..");"
+			sql.Query(q)
+		end
 		local text = Format("%s warned SteamID %s for reason %s", ply:Nick(), victim, reason)
 		aw_echoevent(text)
 		return
@@ -195,17 +200,30 @@ end, "m", 2)
 
 aw_addcmd("warnings", function(ply, victim)
 	if(string.find(victim, "STEAM_")) then
-		local q1 = "SELECT id, reason, admin FROM `warns` WHERE steamid = '"..mysqle(victim).."'"
-		aw_sql.sql:Query(q1, function(result)
-			if(#result > 0) then
-				for k, v in pairs(result) do
+		if(aw_sv.MySQL == true) then
+			local q1 = "SELECT id, reason, admin FROM `warns` WHERE steamid = '"..mysqle(victim).."'"
+			aw_sql.sql:Query(q1, function(result)
+				if(#result > 0) then
+					for k, v in pairs(result) do
+						ply:aw_notify_cmd("ID: "..v.id.." | Reason: '"..v.reason.."' | Admin: "..v.admin.."'")
+					end
+					ply:aw_notify_chat("Warnings printed in console.")
+				else
+					ply:aw_notify_chat("No warnings found for SteamID '"..victim.."'")
+				end
+			end)
+		else
+			local q = sql.Query("SELECT id, reason, admin FROM warns WHERE steamid = "..sql.SQLStr(victim))
+			if(#q > 0) then
+				for k, v n pairs(q) do
 					ply:aw_notify_cmd("ID: "..v.id.." | Reason: '"..v.reason.."' | Admin: "..v.admin.."'")
 				end
-				ply:aw_notify_chat("Warnings printed in console.")
+				ply:aw_notify_chat("Warnings printed in the console.")
+				ply:aw_notify_chat(victim.." has "..#result.." warnings.")
 			else
 				ply:aw_notify_chat("No warnings found for SteamID '"..victim.."'")
 			end
-		end)
+		end
 		return
 	end
 
@@ -214,8 +232,22 @@ aw_addcmd("warnings", function(ply, victim)
 		ply:aw_notify(target, 5)
 		return
 	end
-	local q1 = "SELECT id, reason, admin FROM `warns` WHERE steamid = '"..target:SteamID().."'"
-	aw_sql.sql:Query(q1, function(result)
+	if(aw_sv.MySQL == true) then
+		local q1 = "SELECT id, reason, admin FROM `warns` WHERE steamid = '"..target:SteamID().."'"
+		aw_sql.sql:Query(q1, function(result)
+			if(#result > 0) then
+				for k, v in pairs(result) do
+					ply:aw_notify_cmd(v.id.." | '"..v.reason.."' | Warend by: '"..v.admin.."'")
+				end
+				ply:aw_notify_chat("Warnings printed in console.")
+				ply:aw_notify_chat(target:Nick().." has "..#result.." warnings.")
+			else
+				ply:aw_notify_chat(target:Nick().." has no warnings!")
+			end
+		end)
+	else
+		local q = "SELECT id, reason, admin FROM warns WHERE steamid = '"..target:SteamID().."'"
+		local result = sql.Query(q)
 		if(#result > 0) then
 			for k, v in pairs(result) do
 				ply:aw_notify_cmd(v.id.." | '"..v.reason.."' | Warend by: '"..v.admin.."'")
@@ -225,7 +257,7 @@ aw_addcmd("warnings", function(ply, victim)
 		else
 			ply:aw_notify_chat(target:Nick().." has no warnings!")
 		end
-	end)
+	end
 end, "m", 1)
 
 
@@ -241,10 +273,14 @@ aw_addcmd("unwarn", function(ply, victim, warn)
 	end
 	local target = aw_findplayer(victim)
 	local id = target:SteamID()
-	local q1 = "DELETE FROM `warns` WHERE `id` = "..warn.." AND steamid = '"..id.."';"
-	aw_sql.sql:Query(q1, function(result)
-		ply:aw_notify("Warning deleted...", 3)
-	end)
+	if(aw_sv.MySQL == true) then
+		local q1 = "DELETE FROM `warns` WHERE `id` = "..mysqle(warn).." AND steamid = '"..id.."';"
+		aw_sql.sql:Query(q1, function(result)
+			ply:aw_notify("Warning deleted...", 3);
+		end)
+	else
+		local q = sql.Query("DELETE FROM warns WHERE id = "..sql.SQLStr(warn).." AND steamid = '"..id.."';")
+	end
 	target:SetNWBool("Already_Joined", true)
 	target:aw_LoadWarns()
 end, "m", 2)

@@ -215,7 +215,7 @@ aw_addcmd("warnings", function(ply, victim)
 		else
 			local q = sql.Query("SELECT id, reason, admin FROM warns WHERE steamid = "..sql.SQLStr(victim))
 			if(#q > 0) then
-				for k, v n pairs(q) do
+				for k, v in pairs(q) do
 					ply:aw_notify_cmd("ID: "..v.id.." | Reason: '"..v.reason.."' | Admin: "..v.admin.."'")
 				end
 				ply:aw_notify_chat("Warnings printed in the console.")
